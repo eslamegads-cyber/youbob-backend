@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>فتح التطبيق</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 40px; }
+    h1 { font-size: 24px; margin-bottom: 20px; }
+    p { font-size: 16px; margin-bottom: 20px; }
+    a.button { display: inline-block; padding: 12px 24px; background: #007bff; color: #fff; text-decoration: none; border-radius: 8px; }
+  </style>
+  <script>
+    const iosStore = "https://apps.apple.com/app/idYOUR_IOS_APP_ID";
+    const androidStore = "https://play.google.com/store/apps/details?id=YOUR_ANDROID_PACKAGE";
+    const appLink = "yourapp://open"; // استبدل هذا بالـ deep link الخاص بتطبيقك
+    const fallbackUrl = window.location.href;
+
+    function openApp() {
+      const now = Date.now();
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        window.location = appLink;
+        setTimeout(() => {
+          if (Date.now() - now < 1500) {
+            window.location = iosStore;
+          }
+        }, 1200);
+      } else if (/Android/.test(navigator.userAgent)) {
+        window.location = appLink;
+        setTimeout(() => {
+          if (Date.now() - now < 1500) {
+            window.location = androidStore;
+          }
+        }, 1200);
+      } else {
+        window.location = fallbackUrl;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      openApp();
+      const button = document.getElementById("openAppButton");
+      button.href = appLink;
+    });
+  </script>
+</head>
+<body>
+  <h1>جارٍ فتح التطبيق...</h1>
+  <p>إذا لم يفتح التطبيق تلقائياً، اضغط على الزر أدناه.</p>
+  <a id="openAppButton" class="button" href="#">فتح التطبيق</a>
+  <p>إن لم يكن التطبيق مثبتاً، سيتم توجيهك إلى المتجر.</p>
+</body>
+</html>
