@@ -38,6 +38,7 @@ app.add_middleware(
         "http://localhost:5173",           # ري آكت محلي
         "http://10.71.63.164:5173",     # ري آكت عبر الشبكة
         "http://10.71.63.164",
+        "https://youbob-backend.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
