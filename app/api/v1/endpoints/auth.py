@@ -208,7 +208,8 @@ async def register_user(
         email=email,
         hashed_password=get_password_hash(password),
         phone_number=phone_number,
-        is_active=False,
+        is_active=True,
+        is_verified=True,
         profile_pic=uploaded_files.get("profile_url"),
         id_front=uploaded_files.get("id_front_url"),
         id_back=uploaded_files.get("id_back_url"),
@@ -220,10 +221,7 @@ async def register_user(
     db.commit()
     db.refresh(new_user)
 
-    token = create_verification_token(email)
-    background_tasks.add_task(send_verification_email, email, token)
-
-    return {"message": "تم إنشاء الحساب، يرجى تفعيل البريد"}
+    return {"message": "تم إنشاء الحساب بنجاح ويمكنك تسجيل الدخول الآن"}
 
 # =========================
 # ✅ تفعيل البريد الإلكتروني
