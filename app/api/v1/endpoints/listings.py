@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import os
-import time
+import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import or_
@@ -16,6 +16,8 @@ from app.schemas.listing import ListingCreate, ListingOut, ListingUpdate
 router = APIRouter()
 
 LISTING_UPLOAD_DIR = os.path.join("app", "static", "uploads", "listings")
+MAX_LISTING_IMAGE_SIZE = 5 * 1024 * 1024
+MAX_LISTING_IMAGES = 8
 os.makedirs(LISTING_UPLOAD_DIR, exist_ok=True)
 
 
@@ -38,12 +40,9 @@ def read_listings(
     limit: int = Query(default=50, le=100),
     type: Optional[str] = None,
     q: Optional[str] = None,
-    include_inactive: bool = False,
     db: Session = Depends(get_db),
 ):
-    query = db.query(Listing)
-    if not include_inactive:
-        query = query.filter(Listing.is_active == True)
+    query = db.query(Listing).filter(Listing.is_active == True)
     if type:
         query = query.filter(Listing.type == type)
     if q:
@@ -138,7 +137,10 @@ async def upload_listing_images(
     allowed_extensions = {".jpg", ".jpeg", ".png", ".webp"}
     base_url = str(request.base_url).rstrip("/")
 
-    for file in files[:8]:
+    if len(files) > MAX_LISTING_IMAGES:
+        raise HTTPException(status_code=400, detail="الحد الأقصى 8 صور لكل إعلان")
+
+    for file in files:
         ext = os.path.splitext(file.filename or "")[1].lower()
         content_type = (file.content_type or "").lower()
         if not content_type.startswith("image/") and ext not in allowed_extensions:
@@ -146,11 +148,20 @@ async def upload_listing_images(
         if ext not in allowed_extensions:
             ext = ".jpg"
 
-        file_name = f"{current_user.id}_{listing_id}_{int(time.time() * 1000)}_{len(listing.images)}{ext}"
+        file_name = f"{current_user.id}_{listing_id}_{uuid.uuid4().hex}{ext}"
         file_path = os.path.join(LISTING_UPLOAD_DIR, file_name)
-        content = await file.read()
+        size = 0
         with open(file_path, "wb") as buffer:
-            buffer.write(content)
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > MAX_LISTING_IMAGE_SIZE:
+                    buffer.close()
+                    os.remove(file_path)
+                    raise HTTPException(
+                        status_code=413,
+                        detail="حجم الصورة يجب ألا يتجاوز 5MB",
+                    )
+                buffer.write(chunk)
 
         image = ListingImage(
             listing_id=listing.id,
