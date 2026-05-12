@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, chat, maintenance, users
+from app.api.v1.endpoints import auth, chat, listings, maintenance, users
 
 # 1. إنشاء الراوتر الرئيسي للنسخة الأولى من الـ API
 api_router = APIRouter()
@@ -16,3 +16,6 @@ api_router.include_router(users.router, prefix="/users", tags=["users-operations
 
 # 5. أدوات الصيانة المؤقتة
 api_router.include_router(maintenance.router, prefix="/maintenance", tags=["maintenance"])
+
+# 6. إعلانات المنتجات والوظائف والعقارات والخدمات
+api_router.include_router(listings.router, prefix="/listings", tags=["listings"])

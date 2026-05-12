@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.db.session import engine, Base, get_db, SessionLocal
 from app.models import (
     user, message, conversation, notification, reaction, attachment,
-    message_status, user_status, blocked_user
+    message_status, user_status, blocked_user, listing, listing_image
 )
 from app.models.user import User
 from app.api.v1.api import api_router

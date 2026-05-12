@@ -8,3 +8,5 @@ from .attachment import MessageAttachment
 from .message_status import MessageStatus
 from .user_status import UserStatus
 from .blocked_user import BlockedUser
+from .listing import Listing
+from .listing_image import ListingImage
