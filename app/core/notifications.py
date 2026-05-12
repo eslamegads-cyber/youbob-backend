@@ -1,11 +1,16 @@
-import firebase_admin
-from firebase_admin import messaging, credentials
+import json
+import logging
 import os
 from typing import Optional
 
-# تحديد المسار التلقائي للملف في المجلد الرئيسي
+import firebase_admin
+from firebase_admin import credentials, messaging
+
+logger = logging.getLogger(__name__)
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 path_to_json = os.path.join(BASE_DIR, "firebase_key.json")
+_firebase_ready = False
 
 _RESERVED_DATA_KEYS = {
     "from",
@@ -16,17 +21,29 @@ _RESERVED_PREFIXES = ("google", "gcm")
 
 # تهيئة Firebase مرة واحدة فقط
 if not firebase_admin._apps:
-    try:
-        cred = credentials.Certificate(path_to_json)
-        firebase_admin.initialize_app(cred)
-        print("✅ تم تهيئة Firebase بنجاح")
+    firebase_credentials_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
 
-    except Exception as e:
-        print(f"❌ خطأ في تهيئة Firebase: {e}")
+    try:
+        if firebase_credentials_json:
+            cred = credentials.Certificate(json.loads(firebase_credentials_json))
+            firebase_admin.initialize_app(cred)
+            _firebase_ready = True
+            logger.info("Firebase initialized from FIREBASE_CREDENTIALS_JSON")
+        elif os.path.exists(path_to_json):
+            cred = credentials.Certificate(path_to_json)
+            firebase_admin.initialize_app(cred)
+            _firebase_ready = True
+            logger.info("Firebase initialized from firebase_key.json")
+        else:
+            logger.warning("Firebase credentials are not configured. Push notifications are disabled.")
+    except Exception:
+        logger.exception("Firebase initialization failed. Push notifications are disabled.")
+else:
+    _firebase_ready = True
 
 # 🟢 تأكد أن اسم الدالة مطابق لما تستورده في chat_manager
 def send_push_notification(fcm_token: str, title: str, body: str, data: Optional[dict] = None):
-    if not fcm_token:
+    if not fcm_token or not _firebase_ready:
         return
 
     safe_data = _sanitize_fcm_data(data)
