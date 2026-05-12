@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 import uuid
@@ -37,6 +38,7 @@ from app.core.chat_manager import manager
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/chat/login")
 
@@ -77,7 +79,22 @@ mail_config = ConnectionConfig(
     USE_CREDENTIALS=True
 )
 
+def missing_mail_settings() -> List[str]:
+    required_settings = [
+        "MAIL_USERNAME",
+        "MAIL_PASSWORD",
+        "MAIL_FROM",
+        "MAIL_SERVER",
+        "PUBLIC_BASE_URL",
+    ]
+    return [key for key in required_settings if not os.getenv(key)]
+
 async def send_verification_email(email: str, token: str):
+    missing_settings = missing_mail_settings()
+    if missing_settings:
+        logger.error("Verification email skipped. Missing mail settings: %s", ", ".join(missing_settings))
+        return
+
     base_url = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
     verify_url = f"{base_url}/api/v1/auth/verify-email?token={token}" if base_url else None
     action_html = (
@@ -101,10 +118,19 @@ async def send_verification_email(email: str, token: str):
         subtype=MessageType.html
     )
     fm = FastMail(mail_config)
-    await fm.send_message(message)
+    try:
+        await fm.send_message(message)
+        logger.info("Verification email sent to %s", email)
+    except Exception:
+        logger.exception("Verification email failed for %s", email)
 
 
 async def send_password_reset_email(email: str, token: str):
+    missing_settings = missing_mail_settings()
+    if missing_settings:
+        logger.error("Password reset email skipped. Missing mail settings: %s", ", ".join(missing_settings))
+        return
+
     html_content = f"""
     <div style="text-align:center;font-family:Arial,sans-serif;">
         <h2>استعادة كلمة المرور</h2>
@@ -120,7 +146,11 @@ async def send_password_reset_email(email: str, token: str):
         subtype=MessageType.html
     )
     fm = FastMail(mail_config)
-    await fm.send_message(message)
+    try:
+        await fm.send_message(message)
+        logger.info("Password reset email sent to %s", email)
+    except Exception:
+        logger.exception("Password reset email failed for %s", email)
 
 # =========================
 # 📦 SCHEMAS
@@ -210,6 +240,20 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     user.is_verified = True
     db.commit()
     return {"message": "تم تفعيل الحساب بنجاح"}
+
+
+@router.post("/resend-verification")
+async def resend_verification_email(
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == email).first()
+    if user and not user.is_active:
+        token = create_verification_token(email)
+        background_tasks.add_task(send_verification_email, email, token)
+
+    return {"message": "إذا كان البريد مسجلاً وغير مفعل، سيتم إرسال رسالة تفعيل جديدة"}
 
 
 # =========================
