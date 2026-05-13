@@ -1,3 +1,4 @@
+import email
 import json
 import logging
 import os
@@ -204,25 +205,30 @@ async def register_user(
 
     # 👇 تم تعديل الحقل الأخير ليصبح selfie بدلاً من الاسم القديم
     new_user = User(
-        full_name=full_name,
-        email=email,
-        hashed_password=get_password_hash(password),
-        phone_number=phone_number,
-        is_active=True,
-        is_verified=True,
-        profile_pic=uploaded_files.get("profile_url"),
-        id_front=uploaded_files.get("id_front_url"),
-        id_back=uploaded_files.get("id_back_url"),
-        cover_photo=uploaded_files.get("cover_url"),
-        selfie=uploaded_files.get("camera_url") 
-    )
+    full_name=full_name,
+    email=email,
+    hashed_password=get_password_hash(password),
+    phone_number=phone_number,
+    is_active=False,      # ❌ مهم
+    is_verified=False,    # ❌ مهم
+    profile_pic=uploaded_files.get("profile_url"),
+    id_front=uploaded_files.get("id_front_url"),
+    id_back=uploaded_files.get("id_back_url"),
+    cover_photo=uploaded_files.get("cover_url"),
+    selfie=uploaded_files.get("camera_url")
+)
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    return {"message": "تم إنشاء الحساب بنجاح ويمكنك تسجيل الدخول الآن"}
+        # 📧 إرسال الإيميل بعد نجاح التسجيل
+    token = create_verification_token(email)
+    background_tasks.add_task(send_verification_email, email, token)
 
+    return {
+        "message": "تم إنشاء الحساب بنجاح، يرجى التحقق من بريدك الإلكتروني لتفعيل الحساب"
+}
 # =========================
 # ✅ تفعيل البريد الإلكتروني
 # =========================
@@ -307,11 +313,12 @@ def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = 
             detail="إيميل أو كلمة مرور غير صحيحة",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="يرجى تفعيل البريد الإلكتروني قبل تسجيل الدخول"
-        )
+    
+    if not user.is_verified:
+      raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="EMAIL_NOT_VERIFIED"
+    )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
