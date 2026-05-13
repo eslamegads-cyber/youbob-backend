@@ -29,6 +29,8 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Chat App API", version="1.0.0")
 
+UPLOAD_DIR = "app/static/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 # ==========================================
 # 1. إعدادات الـ CORS (لدعم React و Flutter Web)
 # ==========================================
