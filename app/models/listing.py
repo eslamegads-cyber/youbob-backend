@@ -45,3 +45,7 @@ class Listing(Base):
     @property
     def image_urls(self):
         return [image.url for image in self.images]
+
+    @property
+    def seller_verified(self):
+        return bool(getattr(self.owner, "identity_verified", False))

@@ -12,6 +12,8 @@ class UserBase(BaseModel):
     cover_photo: Optional[str] = None
     is_online: Optional[bool] = False
     last_seen: Optional[datetime] = None
+    identity_verified: Optional[bool] = False
+    identity_verification_status: Optional[str] = "none"
 
 # البيانات المطلوبة عند إنشاء حساب جديد
 class UserCreate(UserBase):

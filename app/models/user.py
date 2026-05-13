@@ -25,6 +25,8 @@ class User(Base):
 
     is_active = Column(Boolean, default=False)
     is_verified = Column(Boolean, default=False)
+    identity_verified = Column(Boolean, default=False)
+    identity_verification_status = Column(String, default="none")
 
     is_online = Column(Boolean, default=False)
     last_seen = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -33,3 +35,9 @@ class User(Base):
 
     sent_messages = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender")
     received_messages = relationship("Message", foreign_keys="Message.recipient_id", back_populates="recipient")
+    identity_requests = relationship(
+        "IdentityVerificationRequest",
+        foreign_keys="IdentityVerificationRequest.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

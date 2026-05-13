@@ -1,29 +1,54 @@
+# Python cache
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
 venv/
 .env
 .env.*
 !.env.example
-*.json
+
+# Secrets
 firebase_key.json
 serviceAccountKey.json
+
+# Database
 *.db
 *.db.*
 *.sqlite
+
+# Logs
 *.log
-*.bak
+
+# Temp files
 *.tmp
+*.bak
 *.swp
+
+# macOS
 .DS_Store
+
+# IDE
 .idea/
 .vscode/
 *.iml
 *.sublime-project
 *.sublime-workspace
-*.pyc
-*.pyo
-*.pyd
-*.so
-*.dylib
+
+# Python packages
 *.egg
 *.egg-info/
+
+# Native libs
+*.so
+*.dylib
+
+# Uploads
 app/static/uploads/
+
+# Testing
+.pytest_cache/
+coverage/
+htmlcov/

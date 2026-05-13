@@ -47,6 +47,7 @@ class ListingOut(ListingBase):
     id: int
     owner_id: int
     is_active: bool
+    seller_verified: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     image_urls: List[str] = Field(default_factory=list)
